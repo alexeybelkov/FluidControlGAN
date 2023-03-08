@@ -1,2 +1,2 @@
 # FluidControlGAN
-"Learning Meaningful Controls for Fluids" implementation for 2D case
+Paper - https://people.mpi-inf.mpg.de/~mchu/projects/den2vel/
