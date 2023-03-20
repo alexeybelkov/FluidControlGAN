@@ -39,8 +39,8 @@ class NoObsDataset(torch.utils.data.Dataset):
         return len(self.density)
     
     def __getitem__(self, index: int):
-        den = np.load(self.density[index])['arr_0'][0].transpose(1, 0, 2)
-        vel = np.load(self.velocity[index])['arr_0'][0,..., :-1].transpose(1, 0, 2)
+        den = np.load(self.density[index])['arr_0'][0, ::-1]
+        vel = np.load(self.velocity[index])['arr_0'][0, ::-1, :, :-1]
         if self._transforms is not None:
             den = self._transforms(den)
             vel = self._transforms(vel)
