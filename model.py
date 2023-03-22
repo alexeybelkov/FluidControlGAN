@@ -37,7 +37,7 @@ class SubNetS(nn.Module):
                                       nn.LeakyReLU(0.2),
                                       nn.Conv2d(8, 16, 3, padding=1, padding_mode='reflect'),
                                       nn.LeakyReLU(0.2))
-        self.unpool = nn.Sequential(nn.Upsample((64, 64), mode='bilinear'), 
+        self.unpool = nn.Sequential(nn.Upsample((64, 64), mode='bilinear', align_corners=False), 
                                     nn.Conv2d(16, 16, 1))
         
     def forward(self, x: torch.Tensor, s: Optional[torch.Tensor] = None) -> Tuple[torch.Tensor, torch.Tensor]:
@@ -70,7 +70,7 @@ class SubNetKE(nn.Module):
         self.ke_out_conv = nn.Conv2d(4, 1, 1)
         self.ke_in_conv = nn.Conv2d(2, 2, 3, padding=1, padding_mode='reflect')
         self.conv_5 = nn.Conv2d(2, 2, 3, padding=1, padding_mode='reflect')
-        self.unpool = nn.Sequential(nn.Upsample(scale_factor=4, mode='bilinear'), nn.Conv2d(2, 1, 1))
+        self.unpool = nn.Sequential(nn.Upsample(scale_factor=4, mode='bilinear', align_corners=False), nn.Conv2d(2, 1, 1))
         
     def forward(self, x: torch.Tensor, ke: Optional[torch.Tensor] = None) -> Tuple[torch.Tensor, torch.Tensor]:
         x = self.conv_1(x)
@@ -88,11 +88,11 @@ class SubNetKE(nn.Module):
 class SubNetW(nn.Module):
     def __init__(self, in_c: int):
         super().__init__()
-        self.up1 = nn.Sequential(nn.Upsample(scale_factor=2, mode='bilinear'), 
+        self.up1 = nn.Sequential(nn.Upsample(scale_factor=2, mode='bilinear', align_corners=False), 
                                  nn.Conv2d(in_c, 32, 3, padding=1, padding_mode='reflect'),
                                  nn.InstanceNorm2d(32),
                                  nn.ReLU())
-        self.up2 = nn.Sequential(nn.Upsample(scale_factor=2, mode='bilinear'), 
+        self.up2 = nn.Sequential(nn.Upsample(scale_factor=2, mode='bilinear', align_corners=False), 
                                  nn.Conv2d(32, 16, 3, padding=1, padding_mode='reflect'),
                                  nn.InstanceNorm2d(16),
                                  nn.ReLU())
@@ -122,7 +122,8 @@ class SubNetW(nn.Module):
         x = self.conv_out(x)
         return x, w_out
     
-
+    
+    
 class UNet(nn.Module):
     def __init__(self, in_c: int, out_c: int, s_subnet: nn.Module, 
                  w_subnet: nn.Module, ke_subnet: nn.Module, obstacles: bool = False):
@@ -159,11 +160,11 @@ class UNet(nn.Module):
                                   nn.Conv2d(128, 128, 3, padding='same', padding_mode='reflect'),
                                   nn.InstanceNorm2d(128),
                                   nn.ReLU(),
-                                  nn.Upsample((128, 128), mode='bilinear'))
+                                  nn.Upsample((128, 128), mode='bilinear', align_corners=False))
         self.up_2 = nn.Sequential(nn.Conv2d(128, 64, 3, padding='same', padding_mode='reflect'),
                                   nn.InstanceNorm2d(64),
                                   nn.ReLU(),
-                                  nn.Upsample((256, 256), mode='bilinear'))
+                                  nn.Upsample((256, 256), mode='bilinear', align_corners=False))
             
         self.up_3 = nn.Sequential(nn.Conv2d(64, 32, 3, padding='same', padding_mode='reflect'),
                                   nn.ReLU())
@@ -191,8 +192,8 @@ class UNet(nn.Module):
         y_s, s_out = self.s_subnet(y, s) # 16 x 8 x 8
         y_ke, ke_out = self.ke_subnet(y, ke) # 1 x 16 x 16
         
-        x = torch.cat([F.interpolate(y_s, size=(64, 64), mode='bilinear'), 
-                       F.interpolate(y_ke, size=(64, 64), mode='bilinear'), x], dim=1)
+        x = torch.cat([F.interpolate(y_s, size=(64, 64), mode='bilinear', align_corners=False), 
+                       F.interpolate(y_ke, size=(64, 64), mode='bilinear', align_corners=False), x], dim=1)
         
         x = self.resblock_4(x)
         x = self.resblock_5(x)
@@ -201,7 +202,7 @@ class UNet(nn.Module):
         y, w_out = self.w_subnet(x, w)
         
         
-        x = torch.cat([F.interpolate(y, size=(64, 64), mode='bilinear'), x], dim=1)
+        x = torch.cat([F.interpolate(y, size=(64, 64), mode='bilinear', align_corners=False), x], dim=1)
         
         x = self.up_1(x)
         x = self.up_2(x)
