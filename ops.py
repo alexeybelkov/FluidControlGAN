@@ -1,6 +1,8 @@
-from typing import Sequence
+from typing import Sequence, Union
 import torch
 from torch.nn import functional as F
+import numpy as np
+
 
 def energy(vel: torch.Tensor) -> torch.Tensor:
     return F.avg_pool2d(vel.pow(2).sum(1, keepdim=True), 16, 16)
@@ -12,8 +14,11 @@ def augment_energy(ke, den):
 
 
 def augment_velocity(vel):
-    eps = torch.randn_like(vel) / max(10, vel.std())
-    return vel + F.interpolate(F.avg_pool2d(eps, 16, 16), size=(256, 256), mode='bilinear', align_corners=True)
+    std = vel.std()
+    vel = F.avg_pool2d(vel, 16, 16)
+    eps = torch.randn_like(vel) / max(std, 10)
+    return torch.relu(F.interpolate(vel + eps, size=(256, 256), 
+                                    mode='bilinear', align_corners=True))
 
 
 def curl(x):
@@ -26,3 +31,12 @@ def curl(x):
 
 def flatten(*tensors: Sequence[torch.Tensor], BATCH_SIZE: int) -> torch.Tensor:
     return torch.cat([t.reshape(BATCH_SIZE, -1) for t in tensors], dim=1)
+
+
+def get_flags(x: torch.Tensor, p: float, size: Union[Sequence, int]) -> torch.Tensor:
+    mask = torch.tensor(np.random.binomial(1, 0.5, size=size), device=device)
+    return (1.0 - mask) * x - mask * torch.ones_like(x)
+
+    
+def moving_avg(x, y, alpha: float):
+    return (1.0 - alpha) * x + alpha * y
