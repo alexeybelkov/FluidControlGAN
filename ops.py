@@ -14,18 +14,17 @@ def augment_energy(ke, den):
 
 
 def augment_velocity(vel):
-    std = vel.std()
     vel = F.avg_pool2d(vel, 16, 16)
-    eps = torch.randn_like(vel) / max(std, 10)
+    eps = torch.randn_like(vel) / 100
     return torch.relu(F.interpolate(vel + eps, size=(256, 256), 
-                                    mode='bilinear', align_corners=True))
+                                    mode='bicubic', align_corners=True))
 
 
 def curl(x):
     dy = x[:, :, 1:] - x[:, :, :-1]
     dx = -x[..., 1:] + x[..., :-1]
-    dy = torch.cat([dy, dy[:, :, -1].unsqueeze(2)], dim=2)
-    dx = torch.cat([dx, dx[..., -1].unsqueeze(3)], dim=3)
+    dy = F.pad(dy, (0, 0, 0, 1), mode='replicate')
+    dx = F.pad(dx, (0, 1, 0, 0), mode='replicate')
     return torch.cat([dy,dx], dim=1)
 
 

@@ -36,16 +36,9 @@ def train_step(G: nn.Module, D: nn.Module, d: torch.Tensor, u: torch.Tensor,
     D_loss.backward()
     optD.step()
     
-    #flatten_gd_out = flatten(*D(g_u, g_s, g_w, g_ke), BATCH_SIZE=BATCH_SIZE)
-    #flatten_vel = flatten(u, s_r, w_r, ke_r, BATCH_SIZE=BATCH_SIZE)
-    #dg_u, dg_s, dg_w, dg_ke = 
-    
     g_out_l1, s_l1, w_l1, ke_l1 = G(d)
     g_u_l1 = curl(g_out_l1)
     
-    #l1_out = flatten(curl(g_out_l1), s_l1, w_l1, ke_l1, BATCH_SIZE=BATCH_SIZE)
-    
-    #G_loss = l_adv * F.mse_loss(flatten_gd_out, flatten_den) + l_l1 * F.l1_loss(l1_out, flatten_vel)
     G_adv_loss = l_adv * loss(F.l1_loss, D(g_u, g_s, g_w, g_ke), gt_den)
     l1_loss = l_l1 * loss(F.l1_loss, [g_u_l1, s_l1, w_l1, ke_l1], [u, s, w, ke])
     
